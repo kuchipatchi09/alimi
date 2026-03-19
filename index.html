@@ -130,8 +130,9 @@
     async function getMeal() {
         const hr = dateObj.getHours();
         let code = "2"; let label = "중식";
-        if (hr < 7) { code = "1"; label = "조식"; }
-        else if (hr >= 13) { code = "3"; label = "석식"; }
+        if (hr>19, hr < 8) { code = "1"; label = "조식"; }
+        else if (19 >= hr >= 13) { code = "3"; label = "석식"; }
+        
 
         document.getElementById('meal-title').innerText = label;
         const ymd = dateObj.toISOString().split('T')[0].replace(/-/g, "");
