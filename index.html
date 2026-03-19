@@ -3,70 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QPI CLASS | 2-2 학급 알리미</title>
+    <title>QPI 2-2</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
     <style>
         :root {
-            --bg: #0A0A0A; --panel: #1C1C1E; --primary: #0A84FF;
-            --accent-orange: #FF9F0A; --accent-green: #30D158;
-            --text-main: #FFFFFF; --text-sub: #8E8E93; --border: #38383A;
+            --bg: #000000; --text-main: #FFFFFF; --text-sub: #AAAAAA; --border: #FFFFFF;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-main); padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; word-break: keep-all; }
+        body { background-color: var(--bg); color: var(--text-main); padding: 30px; }
+
+        header { margin-bottom: 40px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+        header h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
+
+        /* 공지사항 출력 (최상단) */
+        #top-notice-banner {
+            max-width: 1200px; margin: 0 auto 30px auto; padding: 15px;
+            border: 1px solid var(--border); display: none; font-weight: 700;
+        }
 
         .dashboard {
             display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            grid-template-rows: auto 1fr;
-            gap: 20px;
-            max-width: 1400px;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        .card {
-            background: var(--panel); border-radius: 20px;
-            padding: 25px; border: 1px solid var(--border);
-        }
-        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-
-        .notice-input-area { grid-column: span 2; display: flex; gap: 15px; }
-        #notice-input { flex: 1; background: #2C2C2E; border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: #fff; font-size: 1rem; }
-        .post-btn { background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 30px; font-weight: 700; cursor: pointer; }
-
-        .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem; }
-        .timetable th { padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-sub); }
-        .timetable td { padding: 15px 10px; border-bottom: 1px solid var(--border); }
+        .card { border: 1px solid var(--border); padding: 20px; }
+        .card-title { font-size: 1rem; font-weight: 900; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
         
-        .meal-list { list-style: none; line-height: 2; }
-        .meal-item { font-size: 1.1rem; border-left: 3px solid var(--accent-orange); padding-left: 15px; margin-bottom: 10px; }
+        /* 시간표 */
+        .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
+        .timetable th { padding: 8px; font-weight: 800; }
+        .timetable td { padding: 10px 5px; border: 1px solid var(--border); }
 
-        /* 방과후 강조 디자인 */
-        .today-afterschool {
-            background: #2C2C2E; border-radius: 15px; padding: 20px; text-align: center;
-            border: 1px solid var(--accent-green);
-        }
-        .subject-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
-        .teacher-name { font-size: 1.1rem; color: var(--accent-green); font-weight: 600; }
-        .no-class { color: var(--text-sub); font-size: 1.1rem; }
+        /* 급식 줄글 */
+        .info-text { font-size: 0.85rem; line-height: 1.8; }
 
-        @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; } }
+        /* 오늘 방과후 (디자인은 유지, 데이터는 오늘것만) */
+        .after-item { border: 1px solid var(--border); padding: 15px; text-align: center; }
+        .after-name { font-size: 1.5rem; font-weight: 900; display: block; margin-bottom: 5px; }
+        .after-teacher { font-size: 1rem; font-weight: 500; }
+
+        /* 공지사항 입력 (하단) */
+        .notice-input-area { grid-column: span 2; display: flex; gap: 10px; margin-top: 20px; }
+        #notice-input { flex: 1; background: #000; border: 1px solid var(--border); padding: 10px; color: #fff; outline: none; }
+        .post-btn { background: #fff; color: #000; border: 1px solid var(--border); padding: 0 25px; font-weight: 900; cursor: pointer; }
+
+        @media (max-width: 800px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; } }
     </style>
 </head>
 <body>
 
-<header style="margin-bottom: 30px; text-align: center;">
-    <h1 style="font-size: 2.5rem; letter-spacing: -1px;">2-2 CLASS <span style="color:var(--primary)">INTELLIGENCE</span></h1>
-    <p style="color:var(--text-sub)">Today is <span id="today-date"></span></p>
+<header>
+    <h1>2학년 2반 알리미</h1>
+    <p id="today-date"></p>
 </header>
 
-<div class="dashboard">
-    <div class="card notice-input-area">
-        <input type="text" id="notice-input" placeholder="오늘의 주요 공지사항을 입력하세요 (예: 2반 주번 교무실로)">
-        <button class="post-btn" onclick="postNotice()">UPDATE</button>
-    </div>
+<div id="top-notice-banner">
+    [공지] <span id="display-notice"></span>
+</div>
 
-    <div class="card">
-        <div class="card-title">📅 REGULAR TIMETABLE</div>
+<div class="dashboard">
+    <div class="card" style="grid-row: span 2;">
+        <div class="card-title">정규 수업</div>
         <table class="timetable">
             <thead>
                 <tr><th>교시</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr>
@@ -76,24 +76,34 @@
     </div>
 
     <div class="card">
-        <div class="card-title">🍱 TODAY'S MEAL</div>
-        <div id="meal-content">급식 정보를 불러오는 중...</div>
+        <div class="card-title" id="meal-title">급식</div>
+        <div id="meal-content" class="info-text">불러오는 중...</div>
     </div>
 
     <div class="card">
-        <div class="card-title">🧪 TODAY'S AFTER-SCHOOL</div>
+        <div class="card-title">오늘의 방과후</div>
         <div id="after-school-content">
             </div>
+    </div>
+
+    <div class="notice-input-area">
+        <input type="text" id="notice-input" placeholder="전달사항 입력">
+        <button class="post-btn" onclick="postNotice()">등록</button>
     </div>
 </div>
 
 <script>
     const dateObj = new Date();
-    document.getElementById('today-date').innerText = dateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    document.getElementById('today-date').innerText = dateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
 
     function postNotice() {
         const input = document.getElementById('notice-input');
-        if(input.value) alert("공지사항 업데이트: " + input.value);
+        if(input.value.trim() !== "") {
+            document.getElementById('display-notice').innerText = input.value;
+            document.getElementById('top-notice-banner').style.display = 'block';
+            input.value = '';
+            window.scrollTo(0, 0);
+        }
     }
 
     const schedule = [
@@ -118,51 +128,54 @@
     const SD_CODE = "8140071"; 
     
     async function getMeal() {
+        const hr = dateObj.getHours();
+        let code = "2"; let label = "중식";
+        if (hr < 7) { code = "1"; label = "조식"; }
+        else if (hr >= 13) { code = "3"; label = "석식"; }
+
+        document.getElementById('meal-title').innerText = label;
         const ymd = dateObj.toISOString().split('T')[0].replace(/-/g, "");
-        const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_CODE}&SD_SCHUL_CODE=${SD_CODE}&MLSV_YMD=${ymd}`;
+        
         try {
-            const response = await fetch(url);
-            const resData = await response.json();
-            if(resData.mealServiceDietInfo) {
-                const dish = resData.mealServiceDietInfo[1].row[0].DDISH_NM.replace(/\([^)]*\)/g, "");
-                const items = dish.split("<br/>");
-                document.getElementById('meal-content').innerHTML = `<ul class="meal-list">${items.map(i => `<li class="meal-item">${i}</li>`).join('')}</ul>`;
-            } else {
-                document.getElementById('meal-content').innerText = "오늘의 급식 정보가 없습니다.";
-            }
-        } catch (e) { document.getElementById('meal-content').innerText = "급식 정보를 불러오는데 실패했습니다."; }
+            const response = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_CODE}&SD_SCHUL_CODE=${SD_CODE}&MLSV_YMD=${ymd}`);
+            const data = await response.json();
+            if(data.mealServiceDietInfo) {
+                const meal = data.mealServiceDietInfo[1].row.find(r => r.MMEAL_SC_CODE === code);
+                document.getElementById('meal-content').innerText = meal ? meal.DDISH_NM.replace(/\([^)]*\)/g, "").replace(/<br\/>/g, ", ") : "정보 없음";
+            } else { document.getElementById('meal-content').innerText = "급식 없음"; }
+        } catch (e) { document.getElementById('meal-content').innerText = "오류 발생"; }
     }
     getMeal();
 
-    // 4. [수정됨] 방과후 데이터베이스 및 날짜 매칭 로직
+    // 방과후 데이터 및 오늘 날짜 매칭 (디자인은 박스 형태 유지)
     const afterSchoolDB = {
-        "03-09": { sub: "생명과학", teacher: "임미정" }, "03-10": { sub: "물리", teacher: "박태수" },
-        "03-11": { sub: "물리", teacher: "박태수" }, "03-12": { sub: "수학1", teacher: "김솔이" },
-        "03-16": { sub: "화학", teacher: "윤자민" }, "03-17": { sub: "지구과학", teacher: "김미란" },
-        "03-18": { sub: "지구과학", teacher: "김미란" }, "03-19": { sub: "생명과학", teacher: "임미정" },
-        "03-23": { sub: "수학1", teacher: "김솔이" }, "03-24": { sub: "학력평가", teacher: "전국연합" },
-        "03-25": { sub: "수학2", teacher: "정종원" }, "03-26": { sub: "물리", teacher: "박태수" },
-        "03-30": { sub: "화학", teacher: "윤자민" }, "03-31": { sub: "지구과학", teacher: "김미란" },
-        "04-01": { sub: "물리", teacher: "박태수" }, "04-02": { sub: "생명과학", teacher: "임미정" },
-        "04-06": { sub: "수학1", teacher: "김솔이" }, "04-07": { sub: "수학2", teacher: "정종원" },
-        "04-08": { sub: "자습", teacher: "-" }, "04-09": { sub: "생명과학", teacher: "임미정" }
+        "03-09": { sub: "생명과학", t: "임미정" }, "03-10": { sub: "물리", t: "박태수" },
+        "03-11": { sub: "물리", t: "박태수" }, "03-12": { sub: "수학1", t: "김솔이" },
+        "03-16": { sub: "화학", t: "윤자민" }, "03-17": { sub: "지구과학", t: "김미란" },
+        "03-18": { sub: "지구과학", t: "김미란" }, "03-19": { sub: "생명과학", t: "임미정" },
+        "03-23": { sub: "수학1", t: "김솔이" }, "03-24": { sub: "학력평가", t: "전국연합" },
+        "03-25": { sub: "수학2", t: "정종원" }, "03-26": { sub: "물리", t: "박태수" },
+        "03-30": { sub: "화학", t: "윤자민" }, "03-31": { sub: "지구과학", t: "김미란" },
+        "04-01": { sub: "물리", t: "박태수" }, "04-02": { sub: "생명과학", t: "임미정" },
+        "04-06": { sub: "수학1", t: "김솔이" }, "04-07": { sub: "수학2", t: "정종원" },
+        "04-08": { sub: "자습", t: "-" }, "04-09": { sub: "생명과학", t: "임미정" }
     };
 
     function loadAfterSchool() {
         const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
         const dd = String(dateObj.getDate()).padStart(2, '0');
         const todayKey = `${mm}-${dd}`;
-        const contentDiv = document.getElementById('after-school-content');
+        const container = document.getElementById('after-school-content');
 
         if (afterSchoolDB[todayKey]) {
-            contentDiv.innerHTML = `
-                <div class="today-afterschool">
-                    <div class="subject-name">${afterSchoolDB[todayKey].sub}</div>
-                    <div class="teacher-name">${afterSchoolDB[todayKey].teacher} 선생님</div>
+            container.innerHTML = `
+                <div class="after-item">
+                    <span class="after-name">${afterSchoolDB[todayKey].sub}</span>
+                    <span class="after-teacher">${afterSchoolDB[todayKey].t} 선생님</span>
                 </div>
             `;
         } else {
-            contentDiv.innerHTML = `<div class="today-afterschool no-class">오늘은 방과후 수업이 없습니다.</div>`;
+            container.innerHTML = `<div class="after-item" style="color:#888;">오늘 방과후 없음</div>`;
         }
     }
     loadAfterSchool();
