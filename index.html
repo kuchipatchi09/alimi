@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QPI CLASS | 2-2 학급 알리미</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --bg: #0A0A0A; --panel: #1C1C1E; --primary: #0A84FF;
+            --accent-orange: #FF9F0A; --accent-green: #30D158;
+            --text-main: #FFFFFF; --text-sub: #8E8E93; --border: #38383A;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); padding: 20px; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--panel); border-radius: 20px;
+            padding: 25px; border: 1px solid var(--border);
+        }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+
+        .notice-input-area { grid-column: span 2; display: flex; gap: 15px; }
+        #notice-input { flex: 1; background: #2C2C2E; border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: #fff; font-size: 1rem; }
+        .post-btn { background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 30px; font-weight: 700; cursor: pointer; }
+
+        .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem; }
+        .timetable th { padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-sub); }
+        .timetable td { padding: 15px 10px; border-bottom: 1px solid var(--border); }
+        
+        .meal-list { list-style: none; line-height: 2; }
+        .meal-item { font-size: 1.1rem; border-left: 3px solid var(--accent-orange); padding-left: 15px; margin-bottom: 10px; }
+
+        /* 방과후 강조 디자인 */
+        .today-afterschool {
+            background: #2C2C2E; border-radius: 15px; padding: 20px; text-align: center;
+            border: 1px solid var(--accent-green);
+        }
+        .subject-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
+        .teacher-name { font-size: 1.1rem; color: var(--accent-green); font-weight: 600; }
+        .no-class { color: var(--text-sub); font-size: 1.1rem; }
+
+        @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+
+<header style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5rem; letter-spacing: -1px;">2-2 CLASS <span style="color:var(--primary)">INTELLIGENCE</span></h1>
+    <p style="color:var(--text-sub)">Today is <span id="today-date"></span></p>
+</header>
+
+<div class="dashboard">
+    <div class="card notice-input-area">
+        <input type="text" id="notice-input" placeholder="오늘의 주요 공지사항을 입력하세요 (예: 2반 주번 교무실로)">
+        <button class="post-btn" onclick="postNotice()">UPDATE</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📅 REGULAR TIMETABLE</div>
+        <table class="timetable">
+            <thead>
+                <tr><th>교시</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr>
+            </thead>
+            <tbody id="timetable-body"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🍱 TODAY'S MEAL</div>
+        <div id="meal-content">급식 정보를 불러오는 중...</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🧪 TODAY'S AFTER-SCHOOL</div>
+        <div id="after-school-content">
+            </div>
+    </div>
+</div>
+
+<script>
+    const dateObj = new Date();
+    document.getElementById('today-date').innerText = dateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+    function postNotice() {
+        const input = document.getElementById('notice-input');
+        if(input.value) alert("공지사항 업데이트: " + input.value);
+    }
+
+    const schedule = [
+        ["인공", "운동", "전수", "고화학", "한국사"],
+        ["인공", "영어1", "운동", "고화학", "미적2"],
+        ["미적2", "고물리", "영어1", "고화학", "고지구"],
+        ["한국사", "고물리", "독작", "한국사", "독작"],
+        ["독작", "전수", "창체2", "미적2", "전수"],
+        ["고생명", "고지구", "창체2", "인공", "영어1"],
+        ["고생명", "고지구", "창체2", "고생명", "고물리"]
+    ];
+
+    const tbody = document.getElementById('timetable-body');
+    schedule.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td>` + row.map(sub => `<td>${sub}</td>`).join('');
+        tbody.appendChild(tr);
+    });
+
+    const API_KEY = "eb38b586f6af486b9fa46bf786d629d3";
+    const ATPT_CODE = "N10"; 
+    const SD_CODE = "8140071"; 
+    
+    async function getMeal() {
+        const ymd = dateObj.toISOString().split('T')[0].replace(/-/g, "");
+        const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_CODE}&SD_SCHUL_CODE=${SD_CODE}&MLSV_YMD=${ymd}`;
+        try {
+            const response = await fetch(url);
+            const resData = await response.json();
+            if(resData.mealServiceDietInfo) {
+                const dish = resData.mealServiceDietInfo[1].row[0].DDISH_NM.replace(/\([^)]*\)/g, "");
+                const items = dish.split("<br/>");
+                document.getElementById('meal-content').innerHTML = `<ul class="meal-list">${items.map(i => `<li class="meal-item">${i}</li>`).join('')}</ul>`;
+            } else {
+                document.getElementById('meal-content').innerText = "오늘의 급식 정보가 없습니다.";
+            }
+        } catch (e) { document.getElementById('meal-content').innerText = "급식 정보를 불러오는데 실패했습니다."; }
+    }
+    getMeal();
+
+    // 4. [수정됨] 방과후 데이터베이스 및 날짜 매칭 로직
+    const afterSchoolDB = {
+        "03-09": { sub: "생명과학", teacher: "임미정" }, "03-10": { sub: "물리", teacher: "박태수" },
+        "03-11": { sub: "물리", teacher: "박태수" }, "03-12": { sub: "수학1", teacher: "김솔이" },
+        "03-16": { sub: "화학", teacher: "윤자민" }, "03-17": { sub: "지구과학", teacher: "김미란" },
+        "03-18": { sub: "지구과학", teacher: "김미란" }, "03-19": { sub: "생명과학", teacher: "임미정" },
+        "03-23": { sub: "수학1", teacher: "김솔이" }, "03-24": { sub: "학력평가", teacher: "전국연합" },
+        "03-25": { sub: "수학2", teacher: "정종원" }, "03-26": { sub: "물리", teacher: "박태수" },
+        "03-30": { sub: "화학", teacher: "윤자민" }, "03-31": { sub: "지구과학", teacher: "김미란" },
+        "04-01": { sub: "물리", teacher: "박태수" }, "04-02": { sub: "생명과학", teacher: "임미정" },
+        "04-06": { sub: "수학1", teacher: "김솔이" }, "04-07": { sub: "수학2", teacher: "정종원" },
+        "04-08": { sub: "자습", teacher: "-" }, "04-09": { sub: "생명과학", teacher: "임미정" }
+    };
+
+    function loadAfterSchool() {
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        const todayKey = `${mm}-${dd}`;
+        const contentDiv = document.getElementById('after-school-content');
+
+        if (afterSchoolDB[todayKey]) {
+            contentDiv.innerHTML = `
+                <div class="today-afterschool">
+                    <div class="subject-name">${afterSchoolDB[todayKey].sub}</div>
+                    <div class="teacher-name">${afterSchoolDB[todayKey].teacher} 선생님</div>
+                </div>
+            `;
+        } else {
+            contentDiv.innerHTML = `<div class="today-afterschool no-class">오늘은 방과후 수업이 없습니다.</div>`;
+        }
+    }
+    loadAfterSchool();
+</script>
+
+</body>
+</html>
