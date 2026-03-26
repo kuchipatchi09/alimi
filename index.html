@@ -47,7 +47,7 @@
         .post-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
         .post-btn:hover:not(:disabled) { opacity: 0.8; }
 
-        @media (max-width: 850px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; flex-direction: column; } .post-btn { padding: 18px; } .delete-btn { opacity: 1; } }
+        @media (max-width: 850px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; flex-direction: column; } .post-btn { padding: 18px; } .delete-btn { opacity: 1; /* 모바일에선 항상 보이게 */ } }
     </style>
 </head>
 <body>
@@ -57,7 +57,8 @@
     <p id="header-date"></p>
 </header>
 
-<div id="notice-list-container"></div>
+<div id="notice-list-container">
+    </div>
 
 <div class="dashboard">
     <div class="card" style="grid-row: span 2;">
@@ -82,13 +83,14 @@
 </div>
 
 <script>
-    // ⚠️ 이곳에 방금 배포한 앱스크립트 웹앱 URL을 넣어주세요!
+    // ⚠️ 이곳에 방금 배포한 앱스크립트 URL을 넣어주세요!
     const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbydC8xGS66OKmKbiLzjmufMe0xXV_1Xj81OKXbLD_NNHtGL_6WSFhyLT7GMi1NKEFPRTg/exec";
 
     const now = new Date();
     const currentDay = now.getDay();
     document.getElementById('header-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) + "요일";
 
+    // 공지사항 불러오기 (GET)
     async function loadNotices() {
         const container = document.getElementById('notice-list-container');
         try {
@@ -107,6 +109,7 @@
         } catch (e) { console.error("공지 로딩 실패:", e); }
     }
 
+    // 공지사항 등록 (POST - form-urlencoded 방식 사용)
     async function postNotice() {
         const input = document.getElementById('notice-input');
         const btn = document.getElementById('post-btn');
@@ -115,6 +118,7 @@
 
         btn.disabled = true; btn.innerText = "등록 중...";
         
+        // URLSearchParams를 사용해 폼 데이터로 변환 (CORS 우회 핵심)
         const params = new URLSearchParams();
         params.append('action', 'add');
         params.append('notice', text);
@@ -122,20 +126,19 @@
         try {
             await fetch(APP_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors", // 🚀 [핵심] 구글 서버의 응답을 무시하고 전송만 강제합니다!
                 body: params
             });
             input.value = '';
-            // 서버에 데이터가 기록될 시간을 잠깐 준 뒤 목록을 새로고침합니다 (0.8초)
-            setTimeout(loadNotices, 800); 
+            await loadNotices(); // 즉시 새로고침
         } catch (e) {
-            alert("전송 중 오류 발생");
+            alert("서버와 통신 중 문제가 발생했습니다.");
             console.error(e);
         } finally {
             btn.disabled = false; btn.innerText = "등록";
         }
     }
 
+    // 공지사항 삭제
     async function deleteNotice(index) {
         if(!confirm("이 공지사항을 삭제할까요?")) return;
         
@@ -146,17 +149,16 @@
         try {
             await fetch(APP_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors", // 🚀 [핵심] 삭제도 마찬가지로 에러를 회피합니다!
                 body: params
             });
-            setTimeout(loadNotices, 800);
+            await loadNotices(); // 즉시 새로고침
         } catch (e) {
-            alert("삭제 중 오류 발생");
+            alert("삭제에 실패했습니다.");
             console.error(e);
         }
     }
 
-    // 시간표 및 급식 로직
+    // 시간표 렌더링
     const schedule = [["인공", "운동", "전수", "고화학", "한국사"], ["인공", "영어1", "운동", "고화학", "미적2"], ["미적2", "고물리", "영어1", "고화학", "고지구"], ["한국사", "고물리", "독작", "한국사", "독작"], ["독작", "전수", "창체2", "미적2", "전수"], ["고생명", "고지구", "창체2", "인공", "영어1"], ["고생명", "고지구", "창체2", "고생명", "고물리"]];
     const tbody = document.getElementById('timetable-body');
     schedule.forEach((row, i) => {
@@ -166,6 +168,7 @@
         tr.innerHTML = html; tbody.appendChild(tr);
     });
 
+    // 급식 로직
     async function getMeal() {
         const hr = now.getHours(); let targetDate = new Date(now); let mealCode, mealLabel, dayStatus = "오늘";
         if (hr >= 19 || hr < 8) { mealCode = "1"; mealLabel = "조식"; if(hr >= 19) { targetDate.setDate(now.getDate() + 1); dayStatus = "내일"; } } 
@@ -176,4 +179,23 @@
             const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=eb38b586f6af486b9fa46bf786d629d3&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140071&MLSV_YMD=${ymd}`);
             const data = await res.json();
             if(data.mealServiceDietInfo) {
-                const row = data.mealServiceDietInfo[1].row.find(r => r.
+                const row = data.mealServiceDietInfo[1].row.find(r => r.MMEAL_SC_CODE === mealCode);
+                document.getElementById('meal-content').innerText = row ? row.DDISH_NM.replace(/\([^)]*\)/g, "").replace(/<br\/>/g, ", ") : "급식 정보 없음";
+            } else { document.getElementById('meal-content').innerText = "급식 없음"; }
+        } catch (e) { document.getElementById('meal-content').innerText = "로딩 오류"; }
+    }
+
+    // 방과후 로직
+    const afterSchoolDB = { "03-09": { sub: "생명과학", t: "임미정" }, "03-10": { sub: "물리", t: "박태수" }, "03-11": { sub: "물리", t: "박태수" }, "03-12": { sub: "수학1", t: "김솔이" }, "03-16": { sub: "화학", t: "윤자민" }, "03-17": { sub: "지구과학", t: "김미란" }, "03-18": { sub: "지구과학", t: "김미란" }, "03-19": { sub: "생명과학", t: "임미정" }, "03-23": { sub: "수학1", t: "김솔이" }, "03-24": { sub: "학력평가", t: "전국연합" }, "03-25": { sub: "수학2", t: "정종원" }, "03-26": { sub: "물리", t: "박태수" }, "03-30": { sub: "화학", t: "윤자민" }, "03-31": { sub: "지구과학", t: "김미란" }, "04-01": { sub: "물리", t: "박태수" }, "04-02": { sub: "생명과학", t: "임미정" }, "04-06": { sub: "수학1", t: "김솔이" }, "04-07": { sub: "수학2", t: "정종원" }, "04-08": { sub: "화학", t: "윤자민" }, "04-09": { sub: "생명과학", t: "임미정" } };
+    function loadAfterSchool() {
+        const key = `${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const target = document.getElementById('after-school-content');
+        if (afterSchoolDB[key]) target.innerHTML = `<span class="after-name">${afterSchoolDB[key].sub}</span><span class="after-teacher">${afterSchoolDB[key].t} 선생님</span>`;
+        else target.innerHTML = `<div style="color:#555; font-size:0.95rem;">예정된 방과후 없음</div>`;
+    }
+
+    // 실행
+    window.onload = () => { loadNotices(); getMeal(); loadAfterSchool(); };
+</script>
+</body>
+</html>
