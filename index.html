@@ -3,46 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2학년 2반 알리미 PRO</title>
+    <title>2학년 2반 알리미</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
     <style>
         :root {
-            --bg: #050505; --card-bg: #121212; --text-main: #ffffff;
-            --text-sub: #999999; --accent: #ffffff; --border: #2a2a2a;
-            --highlight: rgba(255, 255, 255, 0.08); --point: #404040; --danger: #ff4d4d;
+            --bg: #050505; --card-bg: #151515; --text-main: #ffffff;
+            --text-sub: #999999; --accent: #ffffff; --border: #333333;
+            --highlight: rgba(255, 255, 255, 0.1); --point: #555555; --danger: #ff4d4d;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; word-break: keep-all; }
         body { background-color: var(--bg); color: var(--text-main); padding: 20px; line-height: 1.6; display: flex; flex-direction: column; align-items: center; }
         
-        header { width: 100%; max-width: 1000px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 0 15px 0; border-bottom: 1px solid var(--border); }
+        header { width: 100%; max-width: 1000px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 0 15px 0; border-bottom: 1px solid var(--border); }
         header h1 { font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
         
+        /* 공지사항 카드 리스트 */
         #notice-list-container { width: 100%; max-width: 1000px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 12px; }
-        .notice-item { background: var(--card-bg); border: 1px solid var(--border); padding: 16px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease; }
-        .notice-item:hover { border-color: #444; background: #1a1a1a; }
-        .notice-text { font-weight: 600; font-size: 1rem; color: #fff; flex: 1; }
-        .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; opacity: 0; transition: opacity 0.2s ease; margin-left: 15px; }
-        .notice-item:hover .delete-btn { opacity: 1; }
+        .notice-card { background: var(--card-bg); border: 1px solid var(--border); padding: 18px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s ease, border-color 0.2s ease; }
+        .notice-card:hover { border-color: #666; transform: translateY(-2px); }
+        .notice-text { font-weight: 600; font-size: 1.05rem; color: #fff; flex: 1; word-break: break-all; }
+        .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease; margin-left: 15px; }
+        .notice-card:hover .delete-btn { opacity: 1; }
+        .delete-btn:hover { background: #ff1a1a; transform: scale(1.05); }
 
+        /* 대시보드 레이아웃 */
         .dashboard { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; width: 100%; max-width: 1000px; }
         .card { background: var(--card-bg); border-radius: 20px; padding: 28px; border: 1px solid var(--border); }
-        .card-title { font-size: 0.8rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .card-title .tag { background: var(--point); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
+        .card-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title .tag { background: var(--point); color: #fff; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; }
 
         .timetable { width: 100%; border-collapse: separate; border-spacing: 0 4px; font-size: 0.95rem; }
         .timetable th { padding: 12px; color: var(--text-sub); font-size: 0.8rem; }
-        .timetable td { padding: 14px 5px; text-align: center; background: rgba(255,255,255,0.02); }
+        .timetable td { padding: 14px 5px; text-align: center; background: rgba(255,255,255,0.03); }
         .today-col { background: var(--highlight) !important; color: #fff; font-weight: 800; }
 
         .info-text { font-size: 1.1rem; font-weight: 600; color: #eee; }
-        .after-name { font-size: 1.6rem; font-weight: 900; color: #fff; display: block; }
+        .after-name { font-size: 1.6rem; font-weight: 900; color: #fff; display: block; margin-bottom: 5px; }
 
         .notice-input-area { grid-column: span 2; display: flex; gap: 12px; margin-top: 10px; width: 100%; max-width: 1000px; }
-        #notice-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 16px 20px; color: #fff; border-radius: 14px; outline: none; }
-        .post-btn { background: #fff; color: #000; border: none; padding: 0 30px; font-weight: 800; border-radius: 14px; cursor: pointer; }
-        .post-btn:disabled { background: #444; color: #888; }
+        #notice-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 16px 20px; color: #fff; border-radius: 14px; outline: none; font-size: 1rem; transition: border-color 0.2s; }
+        #notice-input:focus { border-color: var(--text-sub); }
+        .post-btn { background: #fff; color: #000; border: none; padding: 0 35px; font-weight: 800; border-radius: 14px; cursor: pointer; transition: opacity 0.2s; }
+        .post-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .post-btn:hover:not(:disabled) { opacity: 0.8; }
 
-        @media (max-width: 850px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; flex-direction: column; } .post-btn { padding: 15px; } }
+        @media (max-width: 850px) { .dashboard { grid-template-columns: 1fr; } .notice-input-area { grid-column: span 1; flex-direction: column; } .post-btn { padding: 18px; } .delete-btn { opacity: 1; /* 모바일에선 항상 보이게 */ } }
     </style>
 </head>
 <body>
@@ -52,7 +57,8 @@
     <p id="header-date"></p>
 </header>
 
-<div id="notice-list-container"></div>
+<div id="notice-list-container">
+    </div>
 
 <div class="dashboard">
     <div class="card" style="grid-row: span 2;">
@@ -71,38 +77,39 @@
         <div id="after-school-content"></div>
     </div>
     <div class="notice-input-area">
-        <input type="text" id="notice-input" placeholder="새로운 공지사항을 입력하세요.">
+        <input type="text" id="notice-input" placeholder="학급 친구들에게 전달할 공지사항을 입력하세요.">
         <button class="post-btn" id="post-btn" onclick="postNotice()">등록</button>
     </div>
 </div>
 
 <script>
-    // ⚠️ [필수] 본인의 Apps Script 웹 앱 URL을 입력하세요.
-    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhTArSh8sdUZC180XbBYSK0oHhuItPss7OBFz06aHUnH-MIuZoCbA1S0LHnLUXYsumMQ/exec";
+    // ⚠️ 이곳에 방금 배포한 앱스크립트 URL을 넣어주세요!
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbya1RnBMKhdybLd7F1GF7yIBx1EezBbAeqj5Fh7oOH5lIqLr5DPwGhq5ItXo0wTYgK_qQ/exec";
 
     const now = new Date();
     const currentDay = now.getDay();
     document.getElementById('header-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) + "요일";
 
-    // 공지사항 불러오기 (CORS 우회를 위해 리다이렉트 처리 확인)
+    // 공지사항 불러오기 (GET)
     async function loadNotices() {
         const container = document.getElementById('notice-list-container');
         try {
             const res = await fetch(APP_SCRIPT_URL);
             const data = await res.json();
+            
             container.innerHTML = ""; 
             if (data.notices && data.notices.length > 0) {
                 data.notices.forEach((text, index) => {
                     const div = document.createElement('div');
-                    div.className = 'notice-item';
+                    div.className = 'notice-card';
                     div.innerHTML = `<span class="notice-text">📢 ${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">삭제</button>`;
                     container.appendChild(div);
                 });
             }
-        } catch (e) { console.error("로딩 에러", e); }
+        } catch (e) { console.error("공지 로딩 실패:", e); }
     }
 
-    // 공지사항 등록 (no-cors 모드로 CORS 에러 방지)
+    // 공지사항 등록 (POST - form-urlencoded 방식 사용)
     async function postNotice() {
         const input = document.getElementById('notice-input');
         const btn = document.getElementById('post-btn');
@@ -110,34 +117,48 @@
         if(!text) return;
 
         btn.disabled = true; btn.innerText = "등록 중...";
+        
+        // URLSearchParams를 사용해 폼 데이터로 변환 (CORS 우회 핵심)
+        const params = new URLSearchParams();
+        params.append('action', 'add');
+        params.append('notice', text);
+
         try {
             await fetch(APP_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "add", notice: text })
+                body: params
             });
             input.value = '';
-            setTimeout(loadNotices, 800); // 서버 반영 대기 후 갱신
-        } catch (e) { alert("등록 요청 중 오류 발생"); }
-        finally { btn.disabled = false; btn.innerText = "등록"; }
+            await loadNotices(); // 즉시 새로고침
+        } catch (e) {
+            alert("서버와 통신 중 문제가 발생했습니다.");
+            console.error(e);
+        } finally {
+            btn.disabled = false; btn.innerText = "등록";
+        }
     }
 
     // 공지사항 삭제
     async function deleteNotice(index) {
-        if(!confirm("이 공지사항을 삭제하시겠습니까?")) return;
+        if(!confirm("이 공지사항을 삭제할까요?")) return;
+        
+        const params = new URLSearchParams();
+        params.append('action', 'delete');
+        params.append('index', index);
+
         try {
             await fetch(APP_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "delete", index: index })
+                body: params
             });
-            setTimeout(loadNotices, 800);
-        } catch (e) { alert("삭제 요청 중 오류 발생"); }
+            await loadNotices(); // 즉시 새로고침
+        } catch (e) {
+            alert("삭제에 실패했습니다.");
+            console.error(e);
+        }
     }
 
-    // 시간표 및 급식 로직 (기존과 동일)
+    // 시간표 렌더링
     const schedule = [["인공", "운동", "전수", "고화학", "한국사"], ["인공", "영어1", "운동", "고화학", "미적2"], ["미적2", "고물리", "영어1", "고화학", "고지구"], ["한국사", "고물리", "독작", "한국사", "독작"], ["독작", "전수", "창체2", "미적2", "전수"], ["고생명", "고지구", "창체2", "인공", "영어1"], ["고생명", "고지구", "창체2", "고생명", "고물리"]];
     const tbody = document.getElementById('timetable-body');
     schedule.forEach((row, i) => {
@@ -147,6 +168,7 @@
         tr.innerHTML = html; tbody.appendChild(tr);
     });
 
+    // 급식 로직
     async function getMeal() {
         const hr = now.getHours(); let targetDate = new Date(now); let mealCode, mealLabel, dayStatus = "오늘";
         if (hr >= 19 || hr < 8) { mealCode = "1"; mealLabel = "조식"; if(hr >= 19) { targetDate.setDate(now.getDate() + 1); dayStatus = "내일"; } } 
@@ -163,6 +185,7 @@
         } catch (e) { document.getElementById('meal-content').innerText = "로딩 오류"; }
     }
 
+    // 방과후 로직
     const afterSchoolDB = { "03-09": { sub: "생명과학", t: "임미정" }, "03-10": { sub: "물리", t: "박태수" }, "03-11": { sub: "물리", t: "박태수" }, "03-12": { sub: "수학1", t: "김솔이" }, "03-16": { sub: "화학", t: "윤자민" }, "03-17": { sub: "지구과학", t: "김미란" }, "03-18": { sub: "지구과학", t: "김미란" }, "03-19": { sub: "생명과학", t: "임미정" }, "03-23": { sub: "수학1", t: "김솔이" }, "03-24": { sub: "학력평가", t: "전국연합" }, "03-25": { sub: "수학2", t: "정종원" }, "03-26": { sub: "물리", t: "박태수" }, "03-30": { sub: "화학", t: "윤자민" }, "03-31": { sub: "지구과학", t: "김미란" }, "04-01": { sub: "물리", t: "박태수" }, "04-02": { sub: "생명과학", t: "임미정" }, "04-06": { sub: "수학1", t: "김솔이" }, "04-07": { sub: "수학2", t: "정종원" }, "04-08": { sub: "화학", t: "윤자민" }, "04-09": { sub: "생명과학", t: "임미정" } };
     function loadAfterSchool() {
         const key = `${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -171,6 +194,7 @@
         else target.innerHTML = `<div style="color:#555; font-size:0.95rem;">예정된 방과후 없음</div>`;
     }
 
+    // 실행
     window.onload = () => { loadNotices(); getMeal(); loadAfterSchool(); };
 </script>
 </body>
