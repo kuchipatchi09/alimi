@@ -102,7 +102,7 @@
                 data.notices.forEach((text, index) => {
                     const div = document.createElement('div');
                     div.className = 'notice-card';
-                    div.innerHTML = `<span class="notice-text">📢 ${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">삭제</button>`;
+                    div.innerHTML = `<span class="notice-text">[공지] ${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">삭제</button>`;
                     container.appendChild(div);
                 });
             }
