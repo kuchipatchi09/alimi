@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2학년 2반 알리미 🚀</title>
+    <title>2학년 2반 알리미</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
     <style>
         /* === 우주 최강 화려한 테마 변수 설정 === */
@@ -142,7 +142,7 @@
 <body>
 
 <header>
-    <h1>🚀 Class 2-2 HUB</h1>
+    <h1>2학년 2반 화끈해용</h1>
     <p id="header-date"></p>
 </header>
 
@@ -151,22 +151,22 @@
 
 <div class="dashboard">
     <div class="card" style="grid-row: span 2;">
-        <div class="card-title">🔥 Weekly Schedule <span class="tag">Main</span></div>
+        <div class="card-title"> Weekly Schedule <span class="tag">Main</span></div>
         <table class="timetable">
             <thead><tr><th></th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr></thead>
             <tbody id="timetable-body"></tbody>
         </table>
     </div>
     <div class="card">
-        <div class="card-title">🍔 Menu <span id="meal-tag" class="tag">Loading</span></div>
+        <div class="card-title"> Menu <span id="meal-tag" class="tag">Loading</span></div>
         <div id="meal-content" class="info-text">데이터 로딩 중...</div>
     </div>
     <div class="card">
-        <div class="card-title">📚 After School <span class="tag">Today</span></div>
+        <div class="card-title"> After School <span class="tag">Today</span></div>
         <div id="after-school-content"></div>
     </div>
     <div class="notice-input-area">
-        <input type="text" id="notice-input" placeholder="✨ 학급 친구들에게 전파할 내용을 입력하세요!">
+        <input type="text" id="notice-input" placeholder="공지사항을 입력하세요.">
         <button class="post-btn" id="post-btn" onclick="postNotice()">전송</button>
     </div>
 </div>
@@ -239,7 +239,7 @@
                 data.notices.forEach((text, index) => {
                     const div = document.createElement('div');
                     div.className = 'notice-card';
-                    div.innerHTML = `<span class="notice-text"><span>⚡ ALERT</span> ${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">지우기</button>`;
+                    div.innerHTML = `<span class="notice-text"><span>[공지]</span> ${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">지우기</button>`;
                     container.appendChild(div);
                 });
             }
@@ -275,7 +275,7 @@
     }
 
     async function deleteNotice(index) {
-        if(!confirm("진짜로 삭제하시겠습니까? 🔥")) return;
+        if(!confirm("진짜로 삭제하시겠습니까?")) return;
         
         const params = new URLSearchParams();
         params.append('action', 'delete');
