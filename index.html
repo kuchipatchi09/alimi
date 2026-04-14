@@ -56,15 +56,25 @@
         /* 공지사항 */
         .notice-section { grid-column: span 3; display: flex; flex-direction: column; gap: 15px; }
         .notice-input-wrapper { display: flex; gap: 10px; }
+        
+        /* 추가: 공지 타입 선택 드롭다운 */
+        #notice-type { background: var(--surface); border: 1px solid var(--border); padding: 0 16px; border-radius: var(--radius-md); font-size: 1rem; font-weight: 600; color: var(--text-primary); cursor: pointer; outline: none; }
+        #notice-type:focus { border-color: var(--accent); }
+        
         #notice-input { flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 16px 20px; border-radius: var(--radius-md); font-size: 1rem; color: var(--text-primary); }
         #notice-input:focus { outline: none; border-color: var(--accent); }
         .post-btn { background: var(--text-primary); color: var(--bg); border: none; padding: 0 30px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
         
-        .notice-item { background: var(--surface); border: 1px solid var(--border); padding: 18px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; }
+        .notice-item { background: var(--surface); border: 1px solid var(--border); padding: 18px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .notice-text { font-size: 1.05rem; font-weight: 500; flex: 1; display: flex; align-items: center; gap: 12px; }
-        .notice-text::before { content: '공지'; background: var(--text-primary); color: var(--bg); font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-        .delete-btn { background: var(--danger-bg); color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; opacity: 0; }
+        .notice-text::before { content: '반 공지'; background: var(--text-primary); color: var(--bg); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
+        .delete-btn { background: var(--danger-bg); color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; opacity: 0; transition: 0.2s; }
         .notice-item:hover .delete-btn { opacity: 1; }
+
+        /* 전체 공지 강조 스타일 */
+        .notice-item.global-notice { border: 2px solid var(--accent); background: var(--accent-bg); }
+        .notice-item.global-notice .notice-text::before { content: '32기 전체'; background: var(--accent); color: white; }
+        .notice-item.global-notice .notice-text { color: var(--accent); font-weight: 600; }
 
         /* 시간표 */
         .timetable-card { grid-column: span 2; grid-row: span 2; }
@@ -76,12 +86,17 @@
 
         /* 급식, 방과후 */
         .side-card { display: flex; flex-direction: column; }
-        .meal-text { font-size: 1.1rem; font-weight: 500; line-height: 1.6; }
+        .meal-text { font-size: 1.1rem; font-weight: 500; line-height: 1.6; min-height: 60px; }
         .after-name { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
         .after-teacher { font-size: 0.95rem; color: var(--text-secondary); }
-        
-        /* 특별 안내용 텍스트 디자인 */
         .after-special { font-size: 1.2rem; font-weight: 700; color: var(--accent); line-height: 1.5;}
+
+        /* 급식 탭 컨트롤 */
+        .meal-controls { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; }
+        .meal-btn { flex: 1; border: none; background: transparent; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; }
+        .meal-btn:hover { color: var(--text-primary); }
+        .meal-btn.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
+        .meal-date-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; display: block; font-weight: 600;}
 
         .theme-toggle { position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 100; }
         .theme-toggle svg { width: 20px; fill: var(--text-primary); }
@@ -91,6 +106,7 @@
             .timetable-card { grid-column: span 1; grid-row: auto; }
             .notice-section { grid-column: span 1; }
             .notice-input-wrapper { flex-direction: column; }
+            #notice-type { padding: 14px; }
             .post-btn { padding: 16px; }
             .delete-btn { opacity: 1; }
         }
@@ -121,7 +137,11 @@
 <div class="dashboard" id="main-dashboard">
     <div class="notice-section">
         <div class="notice-input-wrapper">
-            <input type="text" id="notice-input" placeholder="새로운 공지사항을 입력하세요 (우리 반 전용)">
+            <select id="notice-type">
+                <option value="class">우리 반 공지</option>
+                <option value="all">32기 전체 공지</option>
+            </select>
+            <input type="text" id="notice-input" placeholder="새로운 공지사항을 입력하세요">
             <button class="post-btn" id="post-btn" onclick="postNotice()">등록</button>
         </div>
         <div id="notice-list-container"></div>
@@ -141,8 +161,13 @@
     <div class="card side-card">
         <div class="card-header">
             <div class="card-title">급식 메뉴</div>
-            <div class="badge" id="meal-tag">로딩중</div>
+            <div class="meal-controls">
+                <button class="meal-btn" id="meal-btn-1" onclick="changeMealCode('1')">조식</button>
+                <button class="meal-btn" id="meal-btn-2" onclick="changeMealCode('2')">중식</button>
+                <button class="meal-btn" id="meal-btn-3" onclick="changeMealCode('3')">석식</button>
+            </div>
         </div>
+        <span class="meal-date-label" id="meal-date-label">오늘</span>
         <div id="meal-content" class="meal-text">데이터를 불러오는 중...</div>
     </div>
 
@@ -158,7 +183,7 @@
 <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()"></button>
 
 <script>
-    // ⚠️ 구글 앱스 스크립트 웹앱 URL (새로 배포한 URL로 덮어쓰세요)
+    // ⚠️ 구글 앱스 스크립트 웹앱 URL (기존 URL 유지)
     const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0xpDfq8OnNdXDb9-0Q05FlUsgSV_UHOIOrrCbPH8_O7-oPeRzD0gviscahbHCktx0AA/exec";
     
     let currentClass = localStorage.getItem('selectedClass');
@@ -188,7 +213,6 @@
         
         if (!currentClass) { openModal(); } 
         else { document.getElementById('class-modal').style.display = 'none'; initDashboard(); }
-        getMeal();
     };
 
     function openModal() {
@@ -208,6 +232,7 @@
         document.getElementById('main-dashboard').classList.add('visible');
         renderTimetable();
         loadNotices();
+        initMealTime(); // 급식 초기화 함수 호출
         loadAfterSchool();
     }
 
@@ -245,37 +270,62 @@
         });
     }
 
-    // === 공지사항 관리 ===
+    // === 공지사항 관리 (전체 공지 병합) ===
     async function loadNotices() {
         const container = document.getElementById('notice-list-container');
         container.innerHTML = `<div class="notice-text" style="color:var(--text-tertiary);">공지를 불러오는 중...</div>`;
         try {
-            const res = await fetch(`${APP_SCRIPT_URL}?action=get&classNum=${currentClass}`);
-            const data = await res.json();
+            // 우리 반 공지와 32기 전체 공지를 동시에 불러옵니다.
+            const [resClass, resAll] = await Promise.all([
+                fetch(`${APP_SCRIPT_URL}?action=get&classNum=${currentClass}`).then(r => r.json()),
+                fetch(`${APP_SCRIPT_URL}?action=get&classNum=all`).then(r => r.json())
+            ]);
+
             container.innerHTML = ""; 
-            if (data.notices && data.notices.length > 0) {
-                data.notices.forEach((text, index) => {
-                    const div = document.createElement('div'); div.className = 'notice-item';
-                    div.innerHTML = `<span class="notice-text">${text}</span><button class="delete-btn" onclick="deleteNotice(${index})">삭제</button>`;
+            let hasNotices = false;
+
+            // 전체 공지 렌더링 (최상단 고정 및 강조)
+            if (resAll.notices && resAll.notices.length > 0) {
+                hasNotices = true;
+                resAll.notices.forEach((text, index) => {
+                    const div = document.createElement('div'); div.className = 'notice-item global-notice';
+                    div.innerHTML = `<span class="notice-text">${text}</span><button class="delete-btn" onclick="deleteNotice('all', ${index})">삭제</button>`;
                     container.appendChild(div);
                 });
-            } else {
+            }
+
+            // 반별 공지 렌더링
+            if (resClass.notices && resClass.notices.length > 0) {
+                hasNotices = true;
+                resClass.notices.forEach((text, index) => {
+                    const div = document.createElement('div'); div.className = 'notice-item';
+                    div.innerHTML = `<span class="notice-text">${text}</span><button class="delete-btn" onclick="deleteNotice('${currentClass}', ${index})">삭제</button>`;
+                    container.appendChild(div);
+                });
+            }
+
+            if (!hasNotices) {
                 container.innerHTML = `<div class="notice-text" style="color:var(--text-tertiary);">등록된 공지가 없습니다.</div>`;
             }
+
         } catch (e) { container.innerHTML = `<div class="notice-text" style="color:var(--danger);">공지를 불러올 수 없습니다.</div>`; }
     }
 
     async function postNotice() {
         const input = document.getElementById('notice-input');
+        const typeSelect = document.getElementById('notice-type');
         const btn = document.getElementById('post-btn');
         const text = input.value.trim();
         if(!text) return;
+
+        // 전체공지면 'all', 반공지면 현재 반 번호 전송
+        const targetClassNum = typeSelect.value === 'all' ? 'all' : currentClass;
 
         btn.disabled = true; btn.innerText = "처리 중";
         const params = new URLSearchParams();
         params.append('action', 'add'); 
         params.append('notice', text);
-        params.append('classNum', currentClass); 
+        params.append('classNum', targetClassNum); 
 
         try {
             await fetch(APP_SCRIPT_URL, { method: "POST", body: params });
@@ -284,12 +334,12 @@
         finally { btn.disabled = false; btn.innerText = "등록"; }
     }
 
-    async function deleteNotice(index) {
+    async function deleteNotice(targetClassNum, index) {
         if(!confirm("삭제하시겠습니까?")) return;
         const params = new URLSearchParams();
         params.append('action', 'delete'); 
         params.append('index', index);
-        params.append('classNum', currentClass); 
+        params.append('classNum', targetClassNum); 
 
         try {
             await fetch(APP_SCRIPT_URL, { method: "POST", body: params });
@@ -297,24 +347,62 @@
         } catch (e) { alert("삭제 오류가 발생했습니다."); }
     }
 
-    // === 급식 ===
-    async function getMeal() {
-        const now = new Date(); const hr = now.getHours(); let targetDate = new Date(now); let mealCode, mealLabel, dayStatus = "오늘";
-        if (hr >= 19 || hr < 8) { mealCode = "1"; mealLabel = "조식"; if(hr >= 19) { targetDate.setDate(now.getDate() + 1); dayStatus = "내일"; } } 
-        else if (hr >= 8 && hr < 13) { mealCode = "2"; mealLabel = "중식"; } else { mealCode = "3"; mealLabel = "석식"; }
-        document.getElementById('meal-tag').innerText = `${dayStatus} ${mealLabel}`;
+    // === 급식 수동 선택 시스템 ===
+    let activeMealCode = "1";
+    let isTomorrowMeal = false;
+
+    function initMealTime() {
+        const hr = new Date().getHours();
+        // 기본 시간대 설정 로직
+        if (hr >= 19 || hr < 8) { 
+            activeMealCode = "1"; 
+            if(hr >= 19) isTomorrowMeal = true; 
+        } 
+        else if (hr >= 8 && hr < 13) { activeMealCode = "2"; isTomorrowMeal = false; } 
+        else { activeMealCode = "3"; isTomorrowMeal = false; }
+        
+        fetchAndRenderMeal();
+    }
+
+    function changeMealCode(code) {
+        activeMealCode = code;
+        // 저녁 7시 이후 '내일 조식'을 보다가 중/석식을 누르면 다시 오늘 날짜 기준으로 변경
+        if (isTomorrowMeal && code !== "1") {
+            isTomorrowMeal = false;
+        }
+        fetchAndRenderMeal();
+    }
+
+    async function fetchAndRenderMeal() {
+        // UI 버튼 활성화 처리
+        document.querySelectorAll('.meal-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`meal-btn-${activeMealCode}`).classList.add('active');
+
+        // 날짜 라벨 처리
+        const dateLabel = document.getElementById('meal-date-label');
+        dateLabel.innerText = isTomorrowMeal ? "내일 식단" : "오늘 식단";
+        if(isTomorrowMeal) dateLabel.style.color = "var(--accent)";
+        else dateLabel.style.color = "var(--text-secondary)";
+
+        document.getElementById('meal-content').innerText = "데이터를 불러오는 중...";
+
+        const now = new Date();
+        let targetDate = new Date(now);
+        if (isTomorrowMeal) targetDate.setDate(now.getDate() + 1);
+        
         const ymd = `${targetDate.getFullYear()}${String(targetDate.getMonth()+1).padStart(2,'0')}${String(targetDate.getDate()).padStart(2,'0')}`;
+        
         try {
             const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=eb38b586f6af486b9fa46bf786d629d3&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140071&MLSV_YMD=${ymd}`);
             const data = await res.json();
             if(data.mealServiceDietInfo) {
-                const row = data.mealServiceDietInfo[1].row.find(r => r.MMEAL_SC_CODE === mealCode);
+                const row = data.mealServiceDietInfo[1].row.find(r => r.MMEAL_SC_CODE === activeMealCode);
                 document.getElementById('meal-content').innerText = row ? row.DDISH_NM.replace(/\([^)]*\)/g, "").replace(/<br\/>/g, ", ") : "예정된 급식이 없습니다.";
             } else { document.getElementById('meal-content').innerText = "예정된 급식이 없습니다."; }
         } catch (e) { document.getElementById('meal-content').innerText = "정보를 불러올 수 없습니다."; }
     }
 
-    // === 방과후 로직 (이미지 분석 반영본) ===
+    // === 방과후 로직 ===
     const afterSchoolDB = {
         "03-30": { "1": {sub:"수학1", t:"김솔이"}, "2": {sub:"화학", t:"윤자민"}, "3": {sub:"물리", t:"박태수"}, "4": {sub:"수학2", t:"정종원"} },
         "03-31": { "1": {sub:"생명과학", t:"임미정"}, "2": {sub:"지구과학", t:"김미란"}, "3": {sub:"물리", t:"박태수"}, "4": {sub:"수학2", t:"정종원"} },
@@ -325,7 +413,6 @@
         "04-08": { "1": {sub:"수학2", t:"정종원"}, "2": {sub:"화학", t:"윤자민"}, "3": {sub:"자습", t:""}, "4": {sub:"지구과학", t:"김미란"} },
         "04-09": { "1": {sub:"수학2", t:"정종원"}, "2": {sub:"생명과학", t:"임미정"}, "3": {sub:"수학1", t:"김솔이"}, "4": {sub:"물리", t:"박태수"} },
         
-        // 고사기간 및 특별일 (type: 'all' 로 처리)
         "04-13": { type: 'all', msg: "1회고사 준비기간" }, "04-14": { type: 'all', msg: "1회고사 준비기간" }, 
         "04-15": { type: 'all', msg: "1회고사 준비기간" }, "04-16": { type: 'all', msg: "1회고사 준비기간" },
         "04-20": { type: 'all', msg: "1회고사 준비기간" }, "04-21": { type: 'all', msg: "1회고사 준비기간" }, 
@@ -367,11 +454,9 @@
         const data = afterSchoolDB[key];
         
         if (data) {
-            // 특별한 날 (전체 공통 적용)
             if (data.type === 'all') {
                 target.innerHTML = `<div class="after-special">${data.msg}</div>`;
             } 
-            // 반별 정보가 있는 경우
             else if (data[currentClass]) {
                 const info = data[currentClass];
                 if (info.sub === "자습") {
