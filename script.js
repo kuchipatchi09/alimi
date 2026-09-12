@@ -469,8 +469,7 @@ function safeAddListener(id, eventType, callback) {
   const el = document.getElementById(id);
   if (el) el.addEventListener(eventType, callback);
 }
-
-// 창 열기 이벤트
+// 창 열기/닫기 이벤트 연결 부분
 safeAddListener('addSubjectBtn', 'click', () => openSubjectModal(null));
 safeAddListener('editSubjectBtn', 'click', () => {
   const subj = state.subjects.find(s => s.id === activeSubjectId);
@@ -481,6 +480,11 @@ safeAddListener('deleteSubjectBtn', 'click', () => {
   if (!subj) return;
   if (confirm(`'${subj.name}' 과목과 안의 할 일을 모두 삭제할까요?`)) deleteSubject(subj.id);
 });
+
+// 📌 여기에 X 버튼 닫기 기능 추가!
+safeAddListener('subjectXBtn', 'click', closeSubjectModal);
+
+safeAddListener('subjectCancelBtn', 'click', closeSubjectModal);
 
 // 📌 창 닫기 이벤트 (취소 버튼 & 배경 클릭)
 safeAddListener('subjectCancelBtn', 'click', closeSubjectModal);
