@@ -10,6 +10,7 @@ const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage
 // ↓↓↓ 여기 두 줄을 본인 배포 값으로 채우세요 ↓↓↓
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyPVkd25b6zpV87BSTQQtiJtPb7_W8WE62XaIXvQVvNZH0W_FveKHsqkkEkvCd8cocrxw/exec';
 const SYNC_SECRET = '12345678'; 
+
 // ↑↑↑ AppsScript.gs 상단의 SECRET 값을 그대로 여기 붙여넣으세요 ↑↑↑
 
 const POLL_INTERVAL_MS = 20000; 
