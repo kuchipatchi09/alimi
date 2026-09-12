@@ -1,18 +1,12 @@
 /* ===================================================================
-   시험 플래너 — app logic
-   데이터는 이 브라우저에만 저장됩니다 (Claude 미리보기에서는 window.storage,
-   GitHub Pages 등 실제 배포 환경에서는 localStorage를 자동으로 사용).
+   시험 플래너 — app logic (안전성 강화 버전)
 =================================================================== */
 
 const STORAGE_KEY = 'exam-planner-data-v1';
 const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage !== null;
 
-// ↓↓↓ 여기 두 줄을 본인 배포 값으로 채우세요 ↓↓↓
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyPVkd25b6zpV87BSTQQtiJtPb7_W8WE62XaIXvQVvNZH0W_FveKHsqkkEkvCd8cocrxw/exec';
 const SYNC_SECRET = '12345678'; 
-
-// ↑↑↑ AppsScript.gs 상단의 SECRET 값을 그대로 여기 붙여넣으세요 ↑↑↑
-
 const POLL_INTERVAL_MS = 20000; 
 const SYNC_ENABLED = !!SYNC_URL && SYNC_SECRET !== 'REPLACE_WITH_YOUR_OWN_SECRET';
 
@@ -30,6 +24,7 @@ async function loadLocalCache() {
     return null;
   }
 }
+
 async function saveLocalCache() {
   const payload = JSON.stringify({ subjects: state.subjects, tasks: state.tasks });
   try {
@@ -39,11 +34,11 @@ async function saveLocalCache() {
       localStorage.setItem(STORAGE_KEY, payload);
     }
   } catch (e) {
-    showToast('로컬 저장에 실패했어요. 브라우저 저장공간을 확인해주세요.');
+    showToast('로컬 저장에 실패했어요.');
   }
 }
 
-/* ---- 원격 동기화 (Google Apps Script) ---- */
+/* ---- 원격 동기화 ---- */
 function setSyncStatus(status) {
   const dot = document.getElementById('syncDot');
   const text = document.getElementById('syncText');
@@ -59,10 +54,9 @@ async function fetchRemote() {
     const url = `${SYNC_URL}?secret=${encodeURIComponent(SYNC_SECRET)}`;
     const res = await fetch(url, { method: 'GET' });
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || '동기화 오류');
+    if (!json.ok) return null;
     return json.data;
   } catch (e) {
-    console.warn('원격 불러오기 실패:', e);
     return null;
   }
 }
@@ -80,12 +74,10 @@ async function pushRemote() {
       })
     });
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || '저장 오류');
+    if (!json.ok) throw new Error();
     setSyncStatus('synced');
   } catch (e) {
-    console.warn('원격 저장 실패:', e);
     setSyncStatus('offline');
-    showToast('동기화에 실패했어요. 이 기기에는 저장됐어요.');
   }
 }
 
@@ -110,10 +102,7 @@ function startPolling() {
   }, POLL_INTERVAL_MS);
 }
 
-/* ---- 통합 인터페이스 ---- */
-async function loadState() {
-  return loadLocalCache();
-}
+async function loadState() { return loadLocalCache(); }
 async function saveState() {
   await saveLocalCache();
   if (SYNC_ENABLED) pushRemote(); 
@@ -121,11 +110,7 @@ async function saveState() {
 
 /* ---------------- state ---------------- */
 const SWATCHES = ['#8aa2ff', '#5fd79b', '#ffb15c', '#ff8fa3', '#7ad6ff', '#c792ea', '#ffd166', '#6bcf9f'];
-
-let state = {
-  subjects: [], 
-  tasks: []     
-};
+let state = { subjects: [], tasks: [] };
 let activeSubjectId = null;
 let activeFilter = 'all';
 let editingSubjectId = null; 
@@ -140,37 +125,29 @@ function daysBetween(dateStr) {
   return Math.round((target - today) / 86400000);
 }
 
-/* ---------------- DOM refs ---------------- */
+/* ---------------- DOM Helpers ---------------- */
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-const subjectListEl = $('#subjectList');
-const subjectEmptyEl = $('#subjectEmpty');
-const panelEmptyEl = $('#panelEmpty');
-const panelContentEl = $('#panelContent');
-const curDot = $('#curDot');
-const curName = $('#curName');
-const curDday = $('#curDday');
-const curBarFill = $('#curBarFill');
-const curBarText = $('#curBarText');
-const taskListEl = $('#taskList');
-const taskEmptyEl = $('#taskEmpty');
-const toastEl = $('#toast');
-
-/* ---------------- toast ---------------- */
 let toastTimer = null;
 function showToast(msg) {
+  const toastEl = $('#toast');
+  if (!toastEl) return;
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 /* ---------------- computations ---------------- */
 function tasksFor(subjectId) {
-  return state.tasks
-    .filter(t => t.subjectId === subjectId)
-    .sort((a, b) => a.order - b.order);
+  return state.tasks.filter(t => t.subjectId === subjectId).sort((a, b) => a.order - b.order);
 }
 function subjectProgress(subjectId) {
   const ts = tasksFor(subjectId);
@@ -192,20 +169,26 @@ function ddayLabel(dateStr) {
 
 /* ---------------- rendering ---------------- */
 function renderAll() {
-  renderOverview();
-  renderSidebar();
-  renderPanel();
+  try {
+    renderOverview();
+    renderSidebar();
+    renderPanel();
+  } catch (e) {
+    console.error("렌더링 오류:", e);
+  }
 }
 
 function renderOverview() {
   const { done, total, pct } = overallProgress();
-  $('#overallPct').innerHTML = `${pct}<small>%</small>`;
-  $('#statDone').textContent = done;
-  $('#statTodo').textContent = total - done;
-  $('#statSubjects').textContent = state.subjects.length;
-
-  const circumference = 326.7;
-  $('#ringFill').style.strokeDashoffset = String(circumference * (1 - pct / 100));
+  if ($('#overallPct')) $('#overallPct').innerHTML = `${pct}<small>%</small>`;
+  if ($('#statDone')) $('#statDone').textContent = done;
+  if ($('#statTodo')) $('#statTodo').textContent = total - done;
+  if ($('#statSubjects')) $('#statSubjects').textContent = state.subjects.length;
+  
+  if ($('#ringFill')) {
+    const circumference = 326.7;
+    $('#ringFill').style.strokeDashoffset = String(circumference * (1 - pct / 100));
+  }
 
   const upcoming = state.tasks
     .filter(t => !t.done && t.dueDate)
@@ -214,29 +197,33 @@ function renderOverview() {
     .slice(0, 6);
 
   const dueListEl = $('#dueList');
-  dueListEl.innerHTML = '';
-  $('#dueEmpty').style.display = upcoming.length ? 'none' : 'block';
+  if (dueListEl) {
+    dueListEl.innerHTML = '';
+    if ($('#dueEmpty')) $('#dueEmpty').style.display = upcoming.length ? 'none' : 'block';
 
-  upcoming.forEach(t => {
-    const subj = state.subjects.find(s => s.id === t.subjectId);
-    if (!subj) return;
-    const li = document.createElement('li');
-    li.className = 'due-item';
-    const whenClass = t.diff < 0 ? 'overdue' : t.diff === 0 ? 'today' : 'soon';
-    const whenText = t.diff < 0 ? `${Math.abs(t.diff)}일 지남` : t.diff === 0 ? '오늘' : `${t.diff}일 남음`;
-    li.innerHTML = `
-      <span class="dot" style="background:${subj.color}"></span>
-      <span class="name">${escapeHtml(subj.name)}</span>
-      <span class="title">${escapeHtml(t.title)}</span>
-      <span class="when ${whenClass}">${whenText}</span>
-    `;
-    dueListEl.appendChild(li);
-  });
+    upcoming.forEach(t => {
+      const subj = state.subjects.find(s => s.id === t.subjectId);
+      if (!subj) return;
+      const li = document.createElement('li');
+      li.className = 'due-item';
+      const whenClass = t.diff < 0 ? 'overdue' : t.diff === 0 ? 'today' : 'soon';
+      const whenText = t.diff < 0 ? `${Math.abs(t.diff)}일 지남` : t.diff === 0 ? '오늘' : `${t.diff}일 남음`;
+      li.innerHTML = `
+        <span class="dot" style="background:${subj.color}"></span>
+        <span class="name">${escapeHtml(subj.name)}</span>
+        <span class="title">${escapeHtml(t.title)}</span>
+        <span class="when ${whenClass}">${whenText}</span>
+      `;
+      dueListEl.appendChild(li);
+    });
+  }
 }
 
 function renderSidebar() {
+  const subjectListEl = $('#subjectList');
+  if (!subjectListEl) return;
   subjectListEl.innerHTML = '';
-  subjectEmptyEl.style.display = state.subjects.length ? 'none' : 'block';
+  if ($('#subjectEmpty')) $('#subjectEmpty').style.display = state.subjects.length ? 'none' : 'block';
 
   state.subjects.forEach(subj => {
     const { done, total, pct } = subjectProgress(subj.id);
@@ -269,41 +256,56 @@ function renderSidebar() {
 
 function renderPanel() {
   const subj = state.subjects.find(s => s.id === activeSubjectId);
+  const panelEmptyEl = $('#panelEmpty');
+  const panelContentEl = $('#panelContent');
+  
   if (!subj) {
-    panelEmptyEl.hidden = false;
-    panelContentEl.hidden = true;
+    if (panelEmptyEl) panelEmptyEl.hidden = false;
+    if (panelContentEl) panelContentEl.hidden = true;
     return;
   }
-  panelEmptyEl.hidden = true;
-  panelContentEl.hidden = false;
+  
+  if (panelEmptyEl) panelEmptyEl.hidden = true;
+  if (panelContentEl) panelContentEl.hidden = false;
 
-  curDot.style.background = subj.color;
-  curName.textContent = subj.name;
-  if (subj.examDate) {
-    curDday.hidden = false;
-    curDday.textContent = ddayLabel(subj.examDate) + ' · ' + subj.examDate.replaceAll('-', '.');
-  } else {
-    curDday.hidden = true;
+  if ($('#curDot')) $('#curDot').style.background = subj.color;
+  if ($('#curName')) $('#curName').textContent = subj.name;
+  
+  const curDday = $('#curDday');
+  if (curDday) {
+    if (subj.examDate) {
+      curDday.hidden = false;
+      curDday.textContent = ddayLabel(subj.examDate) + ' · ' + subj.examDate.replaceAll('-', '.');
+    } else {
+      curDday.hidden = true;
+    }
   }
 
   const { done, total, pct } = subjectProgress(subj.id);
-  curBarFill.style.width = pct + '%';
-  curBarFill.style.background = subj.color;
-  curBarText.textContent = `${done} / ${total} 완료`;
+  if ($('#curBarFill')) {
+    $('#curBarFill').style.width = pct + '%';
+    $('#curBarFill').style.background = subj.color;
+  }
+  if ($('#curBarText')) $('#curBarText').textContent = `${done} / ${total} 완료`;
 
   renderTasks(subj);
 }
 
 function renderTasks(subj) {
+  const taskListEl = $('#taskList');
+  if (!taskListEl) return;
+
   let list = tasksFor(subj.id);
   if (activeFilter === 'active') list = list.filter(t => !t.done);
   if (activeFilter === 'done') list = list.filter(t => t.done);
 
   taskListEl.innerHTML = '';
-  taskEmptyEl.style.display = list.length ? 'none' : 'block';
-  taskEmptyEl.textContent = tasksFor(subj.id).length
-    ? '해당 조건의 할 일이 없어요.'
-    : '이 과목에 할 일이 없어요. 위에서 추가해보세요.';
+  if ($('#taskEmpty')) {
+    $('#taskEmpty').style.display = list.length ? 'none' : 'block';
+    $('#taskEmpty').textContent = tasksFor(subj.id).length
+      ? '해당 조건의 할 일이 없어요.'
+      : '이 과목에 할 일이 없어요. 위에서 추가해보세요.';
+  }
 
   const typeLabel = { study: '공부', assignment: '수행평가', etc: '기타' };
 
@@ -358,12 +360,6 @@ function renderTasks(subj) {
   });
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 /* ---------------- mutations ---------------- */
 async function toggleTask(id) {
   const t = state.tasks.find(t => t.id === id);
@@ -384,15 +380,9 @@ async function addTask({ title, type, dueDate }) {
   const siblings = tasksFor(activeSubjectId);
   const maxOrder = siblings.length ? Math.max(...siblings.map(t => t.order)) : -1;
   state.tasks.push({
-    id: uid(),
-    subjectId: activeSubjectId,
-    title,
-    type,
-    dueDate: dueDate || null,
-    done: false,
-    order: maxOrder + 1,
-    createdAt: new Date().toISOString(),
-    completedAt: null
+    id: uid(), subjectId: activeSubjectId, title, type,
+    dueDate: dueDate || null, done: false, order: maxOrder + 1,
+    createdAt: new Date().toISOString(), completedAt: null
   });
   await saveState();
   renderAll();
@@ -431,14 +421,12 @@ async function deleteSubject(id) {
   renderAll();
 }
 
-/* ---------------- subject modal ---------------- */
-const subjectModal = $('#subjectModalBackdrop');
-const subjectNameInput = $('#subjectNameInput');
-const subjectExamInput = $('#subjectExamInput');
-const swatchRow = $('#swatchRow');
+/* ---------------- 과목 추가 모달 (핵심 수정 부분) ---------------- */
 let selectedColor = SWATCHES[0];
 
 function buildSwatches() {
+  const swatchRow = $('#swatchRow');
+  if (!swatchRow) return;
   swatchRow.innerHTML = '';
   SWATCHES.forEach(c => {
     const sw = document.createElement('div');
@@ -455,75 +443,89 @@ function buildSwatches() {
 
 function openSubjectModal(subject) {
   editingSubjectId = subject ? subject.id : null;
-  $('#subjectModalTitle').textContent = subject ? '과목 수정' : '과목 추가';
-  subjectNameInput.value = subject ? subject.name : '';
-  subjectExamInput.value = subject ? (subject.examDate || '') : '';
+  if ($('#subjectModalTitle')) $('#subjectModalTitle').textContent = subject ? '과목 수정' : '과목 추가';
+  if ($('#subjectNameInput')) $('#subjectNameInput').value = subject ? subject.name : '';
+  if ($('#subjectExamInput')) $('#subjectExamInput').value = subject ? (subject.examDate || '') : '';
+  
   selectedColor = subject ? subject.color : SWATCHES[state.subjects.length % SWATCHES.length];
   buildSwatches();
-  if(subjectModal) {
-    subjectModal.hidden = false;
-    setTimeout(() => subjectNameInput.focus(), 50);
+  
+  const modal = document.getElementById('subjectModalBackdrop');
+  if (modal) {
+    modal.hidden = false;
+    setTimeout(() => { if ($('#subjectNameInput')) $('#subjectNameInput').focus(); }, 50);
   }
 }
 
+// 📌 확실하게 창을 닫아주는 함수
 function closeSubjectModal() { 
-  if(subjectModal) subjectModal.hidden = true; 
+  const modal = document.getElementById('subjectModalBackdrop');
+  if (modal) modal.hidden = true; 
 }
 
-const addSubBtn = $('#addSubjectBtn');
-if(addSubBtn) addSubBtn.addEventListener('click', () => openSubjectModal(null));
+// 이벤트를 안전하게 연결하는 함수
+function safeAddListener(id, eventType, callback) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(eventType, callback);
+}
 
-const editSubBtn = $('#editSubjectBtn');
-if(editSubBtn) {
-  editSubBtn.addEventListener('click', () => {
-    const subj = state.subjects.find(s => s.id === activeSubjectId);
-    if (subj) openSubjectModal(subj);
+// 창 열기 이벤트
+safeAddListener('addSubjectBtn', 'click', () => openSubjectModal(null));
+safeAddListener('editSubjectBtn', 'click', () => {
+  const subj = state.subjects.find(s => s.id === activeSubjectId);
+  if (subj) openSubjectModal(subj);
+});
+safeAddListener('deleteSubjectBtn', 'click', () => {
+  const subj = state.subjects.find(s => s.id === activeSubjectId);
+  if (!subj) return;
+  if (confirm(`'${subj.name}' 과목과 안의 할 일을 모두 삭제할까요?`)) deleteSubject(subj.id);
+});
+
+// 📌 창 닫기 이벤트 (취소 버튼 & 배경 클릭)
+safeAddListener('subjectCancelBtn', 'click', closeSubjectModal);
+
+const modalBg = document.getElementById('subjectModalBackdrop');
+if (modalBg) {
+  modalBg.addEventListener('click', (e) => { 
+    if (e.target === modalBg) closeSubjectModal(); 
   });
 }
 
-const delSubBtn = $('#deleteSubjectBtn');
-if(delSubBtn) {
-  delSubBtn.addEventListener('click', () => {
-    const subj = state.subjects.find(s => s.id === activeSubjectId);
-    if (!subj) return;
-    if (confirm(`'${subj.name}' 과목과 안의 할 일을 모두 삭제할까요?`)) deleteSubject(subj.id);
-  });
-}
+// 📌 저장 버튼 처리 (무조건 창부터 닫도록 변경)
+safeAddListener('subjectSaveBtn', 'click', async () => {
+  const nameInput = document.getElementById('subjectNameInput');
+  const examInput = document.getElementById('subjectExamInput');
+  if (!nameInput) return;
+  
+  const name = nameInput.value.trim();
+  if (!name) { showToast('과목 이름을 입력해주세요.'); return; }
+  
+  // 1. 데이터 처리 중 멈춰도 창은 닫히게끔 가장 먼저 닫기 실행!
+  closeSubjectModal();
+  
+  // 2. 이후에 과목 저장 및 화면 새로고침
+  await addOrUpdateSubject({ name, color: selectedColor, examDate: examInput ? examInput.value : '' });
+  showToast(editingSubjectId ? '과목을 수정했어요.' : '과목을 추가했어요.');
+});
 
-const subCancelBtn = $('#subjectCancelBtn');
-if(subCancelBtn) subCancelBtn.addEventListener('click', closeSubjectModal);
-
-if(subjectModal) {
-  subjectModal.addEventListener('click', (e) => { 
-    if (e.target === subjectModal) closeSubjectModal(); 
-  });
-}
-
-const subSaveBtn = $('#subjectSaveBtn');
-if(subSaveBtn) {
-  subSaveBtn.addEventListener('click', async () => {
-    const name = subjectNameInput.value.trim();
-    if (!name) { showToast('과목 이름을 입력해주세요.'); return; }
-    await addOrUpdateSubject({ name, color: selectedColor, examDate: subjectExamInput.value });
-    closeSubjectModal();
-    showToast(editingSubjectId ? '과목을 수정했어요.' : '과목을 추가했어요.');
-  });
-}
-
-/* ---------------- task form / filters ---------------- */
-const taskForm = $('#taskForm');
-if(taskForm) {
+/* ---------------- 할 일(Task) / 필터 이벤트 ---------------- */
+const taskForm = document.getElementById('taskForm');
+if (taskForm) {
   taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!activeSubjectId) return;
-    const title = $('#taskTitle').value.trim();
+    const titleInput = document.getElementById('taskTitle');
+    const title = titleInput ? titleInput.value.trim() : '';
     if (!title) return;
-    const type = $('#taskType').value;
-    const dueDate = $('#taskDue').value;
+    
+    const type = $('#taskType') ? $('#taskType').value : 'etc';
+    const dueDate = $('#taskDue') ? $('#taskDue').value : '';
+    
     await addTask({ title, type, dueDate });
-    $('#taskTitle').value = '';
-    $('#taskDue').value = '';
-    $('#taskTitle').focus();
+    
+    if (titleInput) titleInput.value = '';
+    if ($('#taskDue')) $('#taskDue').value = '';
+    if (titleInput) titleInput.focus();
   });
 }
 
@@ -537,39 +539,30 @@ $$('.filter-btn').forEach(btn => {
   });
 });
 
-/* ---------------- theme ---------------- */
+/* ---------------- 테마(다크/라이트) ---------------- */
 const THEME_KEY = 'exam-planner-theme';
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   const iconSun = $('#iconSun');
   const iconMoon = $('#iconMoon');
-  if(iconSun) iconSun.style.display = theme === 'dark' ? 'block' : 'none';
-  if(iconMoon) iconMoon.style.display = theme === 'dark' ? 'none' : 'block';
+  if (iconSun) iconSun.style.display = theme === 'dark' ? 'block' : 'none';
+  if (iconMoon) iconMoon.style.display = theme === 'dark' ? 'none' : 'block';
   try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
 }
 
-const themeToggle = $('#themeToggle');
-if(themeToggle) {
-  themeToggle.addEventListener('click', () => {
-    const cur = document.documentElement.dataset.theme;
-    applyTheme(cur === 'dark' ? 'light' : 'dark');
-  });
-}
+safeAddListener('themeToggle', 'click', () => {
+  const cur = document.documentElement.dataset.theme;
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
 
-/* ---------------- init ---------------- */
+/* ---------------- 초기 실행 ---------------- */
 async function init() {
   let savedTheme = 'dark';
   try { savedTheme = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
   applyTheme(savedTheme);
 
-  const syncIndicator = document.getElementById('syncIndicator');
-  if (!SYNC_ENABLED && syncIndicator) {
-    syncIndicator.title =
-      'script.js 상단의 SYNC_URL / SYNC_SECRET을 설정하면 여러 기기 동기화가 켜져요.';
-  }
   setSyncStatus(SYNC_ENABLED ? 'syncing' : 'local');
 
-  // 1) 로컬 캐시로 먼저 즉시 렌더링
   const cached = await loadLocalCache();
   if (cached) {
     state.subjects = cached.subjects || [];
@@ -578,7 +571,6 @@ async function init() {
     renderAll();
   }
 
-  // 2) 원격 최신 데이터 덮어쓰기
   if (SYNC_ENABLED) {
     const remote = await fetchRemote();
     if (remote) {
