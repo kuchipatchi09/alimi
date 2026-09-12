@@ -4,11 +4,26 @@
    GitHub Pages 등 실제 배포 환경에서는 localStorage를 자동으로 사용).
 =================================================================== */
 
-/* ---------------- storage layer ---------------- */
+/* ===================================================================
+   저장소 계층
+   1) 로컬 캐시: window.storage(클로드 미리보기) 또는 localStorage(실제 배포).
+      네트워크가 안 되거나 실패해도 항상 즉시 뜨고, 오프라인에서도 동작하게 해줌.
+   2) 원격 동기화: Google Apps Script 웹앱(스프레드시트)에 GET/POST.
+      여러 기기 간 데이터를 맞추는 역할. 실패해도 로컬 캐시로 계속 쓸 수 있음.
+=================================================================== */
 const STORAGE_KEY = 'exam-planner-data-v1';
 const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage !== null;
 
-async function loadState() {
+// ↓↓↓ 여기 두 줄을 본인 배포 값으로 채우세요 ↓↓↓
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyPVkd25b6zpV87BSTQQtiJtPb7_W8WE62XaIXvQVvNZH0W_FveKHsqkkEkvCd8cocrxw/exec';
+const SYNC_SECRET = '12345678'; // AppsScript.gs의 SECRET과 반드시 동일해야 함
+// ↑↑↑ AppsScript.gs 상단의 SECRET 값을 그대로 여기 붙여넣으세요 ↑↑↑
+
+const POLL_INTERVAL_MS = 20000; // 20초마다 다른 기기의 변경사항을 확인
+const SYNC_ENABLED = !!SYNC_URL && SYNC_SECRET !== 'REPLACE_WITH_YOUR_OWN_SECRET';
+
+/* ---- 로컬 캐시 ---- */
+async function loadLocalCache() {
   try {
     if (hasClaudeStorage) {
       const res = await window.storage.get(STORAGE_KEY, false);
@@ -21,8 +36,7 @@ async function loadState() {
     return null;
   }
 }
-
-async function saveState() {
+async function saveLocalCache() {
   const payload = JSON.stringify({ subjects: state.subjects, tasks: state.tasks });
   try {
     if (hasClaudeStorage) {
@@ -31,8 +45,86 @@ async function saveState() {
       localStorage.setItem(STORAGE_KEY, payload);
     }
   } catch (e) {
-    showToast('저장에 실패했어요. 브라우저 저장공간을 확인해주세요.');
+    showToast('로컬 저장에 실패했어요. 브라우저 저장공간을 확인해주세요.');
   }
+}
+
+/* ---- 원격 동기화 (Google Apps Script) ---- */
+function setSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (!dot || !text) return;
+  dot.className = 'sync-dot' + (status === 'synced' ? ' synced' : status === 'offline' ? ' offline' : status === 'syncing' ? ' syncing' : '');
+  const labels = { synced: '동기화됨', offline: '오프라인', syncing: '동기화 중', local: '로컬 전용' };
+  text.textContent = labels[status] || '로컬 전용';
+}
+
+async function fetchRemote() {
+  if (!SYNC_ENABLED) return null;
+  try {
+    const url = `${SYNC_URL}?secret=${encodeURIComponent(SYNC_SECRET)}`;
+    const res = await fetch(url, { method: 'GET' });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || '동기화 오류');
+    return json.data;
+  } catch (e) {
+    console.warn('원격 불러오기 실패:', e);
+    return null;
+  }
+}
+
+async function pushRemote() {
+  if (!SYNC_ENABLED) return;
+  setSyncStatus('syncing');
+  try {
+    // 주의: Content-Type을 'application/json'으로 두면 브라우저가 CORS 프리플라이트를 보내는데
+    // Apps Script 웹앱은 이를 지원하지 않아 실패함. text/plain으로 보내면 프리플라이트 없이 통과됨.
+    const res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        secret: SYNC_SECRET,
+        data: { subjects: state.subjects, tasks: state.tasks }
+      })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || '저장 오류');
+    setSyncStatus('synced');
+  } catch (e) {
+    console.warn('원격 저장 실패:', e);
+    setSyncStatus('offline');
+    showToast('동기화에 실패했어요. 이 기기에는 저장됐어요.');
+  }
+}
+
+let pollTimer = null;
+function startPolling() {
+  if (!SYNC_ENABLED || pollTimer) return;
+  pollTimer = setInterval(async () => {
+    const remote = await fetchRemote();
+    if (!remote) { setSyncStatus('offline'); return; }
+    const incoming = JSON.stringify({ subjects: remote.subjects || [], tasks: remote.tasks || [] });
+    const current = JSON.stringify({ subjects: state.subjects, tasks: state.tasks });
+    if (incoming !== current) {
+      state.subjects = remote.subjects || [];
+      state.tasks = remote.tasks || [];
+      if (!state.subjects.find(s => s.id === activeSubjectId)) {
+        activeSubjectId = state.subjects[0]?.id || null;
+      }
+      await saveLocalCache();
+      renderAll();
+    }
+    setSyncStatus('synced');
+  }, POLL_INTERVAL_MS);
+}
+
+/* ---- 통합 인터페이스 (기존 코드에서 호출하는 이름 그대로 유지) ---- */
+async function loadState() {
+  return loadLocalCache();
+}
+async function saveState() {
+  await saveLocalCache();
+  if (SYNC_ENABLED) pushRemote(); // 화면을 막지 않도록 결과를 기다리지 않음
 }
 
 /* ---------------- state ---------------- */
@@ -494,12 +586,39 @@ async function init() {
   try { savedTheme = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
   applyTheme(savedTheme);
 
-  const saved = await loadState();
-  if (saved) {
-    state.subjects = saved.subjects || [];
-    state.tasks = saved.tasks || [];
-    activeSubjectId = state.subjects[0]?.id || null;
+  if (!SYNC_ENABLED) {
+    document.getElementById('syncIndicator').title =
+      'script.js 상단의 SYNC_URL / SYNC_SECRET을 설정하면 여러 기기 동기화가 켜져요.';
   }
-  renderAll();
+  setSyncStatus(SYNC_ENABLED ? 'syncing' : 'local');
+
+  // 1) 로컬 캐시로 먼저 즉시 렌더링 (오프라인이어도 바로 뜨게)
+  const cached = await loadLocalCache();
+  if (cached) {
+    state.subjects = cached.subjects || [];
+    state.tasks = cached.tasks || [];
+    activeSubjectId = state.subjects[0]?.id || null;
+    renderAll();
+  }
+
+  // 2) 원격(스프레드시트)에서 최신 데이터를 가져와 덮어쓰기
+  if (SYNC_ENABLED) {
+    const remote = await fetchRemote();
+    if (remote) {
+      state.subjects = remote.subjects || [];
+      state.tasks = remote.tasks || [];
+      if (!state.subjects.find(s => s.id === activeSubjectId)) {
+        activeSubjectId = state.subjects[0]?.id || null;
+      }
+      await saveLocalCache();
+      renderAll();
+      setSyncStatus('synced');
+    } else {
+      setSyncStatus('offline');
+    }
+    startPolling();
+  } else if (!cached) {
+    renderAll();
+  }
 }
 init();
