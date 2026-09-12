@@ -107,6 +107,18 @@ input, select{ font-family:inherit; }
 .icon-btn.small{ width:28px; height:28px; border-radius:8px; }
 .icon-btn.danger:hover{ color: var(--danger); }
 
+.sync-indicator{
+  display:flex; align-items:center; gap:6px;
+  height:36px; padding: 0 12px; border-radius:10px;
+  background: var(--panel); border:1px solid var(--border);
+  font-size:11.5px; color: var(--text-dim); white-space:nowrap;
+}
+.sync-dot{ width:7px; height:7px; border-radius:50%; background: var(--text-faint); flex:none; }
+.sync-dot.synced{ background: var(--good); }
+.sync-dot.offline{ background: var(--danger); }
+.sync-dot.syncing{ background: var(--amber); animation: syncPulse 1s infinite ease-in-out; }
+@keyframes syncPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+
 /* ---------- overview ---------- */
 .overview{
   display:grid;
