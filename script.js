@@ -4,22 +4,15 @@
    GitHub Pages 등 실제 배포 환경에서는 localStorage를 자동으로 사용).
 =================================================================== */
 
-/* ===================================================================
-   저장소 계층
-   1) 로컬 캐시: window.storage(클로드 미리보기) 또는 localStorage(실제 배포).
-      네트워크가 안 되거나 실패해도 항상 즉시 뜨고, 오프라인에서도 동작하게 해줌.
-   2) 원격 동기화: Google Apps Script 웹앱(스프레드시트)에 GET/POST.
-      여러 기기 간 데이터를 맞추는 역할. 실패해도 로컬 캐시로 계속 쓸 수 있음.
-=================================================================== */
 const STORAGE_KEY = 'exam-planner-data-v1';
 const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage !== null;
 
 // ↓↓↓ 여기 두 줄을 본인 배포 값으로 채우세요 ↓↓↓
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyPVkd25b6zpV87BSTQQtiJtPb7_W8WE62XaIXvQVvNZH0W_FveKHsqkkEkvCd8cocrxw/exec';
-const SYNC_SECRET = '12345678'; // AppsScript.gs의 SECRET과 반드시 동일해야 함
+const SYNC_SECRET = '12345678'; 
 // ↑↑↑ AppsScript.gs 상단의 SECRET 값을 그대로 여기 붙여넣으세요 ↑↑↑
 
-const POLL_INTERVAL_MS = 20000; // 20초마다 다른 기기의 변경사항을 확인
+const POLL_INTERVAL_MS = 20000; 
 const SYNC_ENABLED = !!SYNC_URL && SYNC_SECRET !== 'REPLACE_WITH_YOUR_OWN_SECRET';
 
 /* ---- 로컬 캐시 ---- */
@@ -77,8 +70,6 @@ async function pushRemote() {
   if (!SYNC_ENABLED) return;
   setSyncStatus('syncing');
   try {
-    // 주의: Content-Type을 'application/json'으로 두면 브라우저가 CORS 프리플라이트를 보내는데
-    // Apps Script 웹앱은 이를 지원하지 않아 실패함. text/plain으로 보내면 프리플라이트 없이 통과됨.
     const res = await fetch(SYNC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -118,25 +109,25 @@ function startPolling() {
   }, POLL_INTERVAL_MS);
 }
 
-/* ---- 통합 인터페이스 (기존 코드에서 호출하는 이름 그대로 유지) ---- */
+/* ---- 통합 인터페이스 ---- */
 async function loadState() {
   return loadLocalCache();
 }
 async function saveState() {
   await saveLocalCache();
-  if (SYNC_ENABLED) pushRemote(); // 화면을 막지 않도록 결과를 기다리지 않음
+  if (SYNC_ENABLED) pushRemote(); 
 }
 
 /* ---------------- state ---------------- */
 const SWATCHES = ['#8aa2ff', '#5fd79b', '#ffb15c', '#ff8fa3', '#7ad6ff', '#c792ea', '#ffd166', '#6bcf9f'];
 
 let state = {
-  subjects: [], // {id, name, color, examDate, createdAt}
-  tasks: []     // {id, subjectId, title, type, dueDate, done, order, createdAt, completedAt}
+  subjects: [], 
+  tasks: []     
 };
 let activeSubjectId = null;
 let activeFilter = 'all';
-let editingSubjectId = null; // null = creating new
+let editingSubjectId = null; 
 let dragTaskId = null;
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -215,7 +206,6 @@ function renderOverview() {
   const circumference = 326.7;
   $('#ringFill').style.strokeDashoffset = String(circumference * (1 - pct / 100));
 
-  // due panel: upcoming (not done) tasks with a due date, sorted, overdue first
   const upcoming = state.tasks
     .filter(t => !t.done && t.dueDate)
     .map(t => ({ ...t, diff: daysBetween(t.dueDate) }))
@@ -469,44 +459,72 @@ function openSubjectModal(subject) {
   subjectExamInput.value = subject ? (subject.examDate || '') : '';
   selectedColor = subject ? subject.color : SWATCHES[state.subjects.length % SWATCHES.length];
   buildSwatches();
-  subjectModal.hidden = false;
-  setTimeout(() => subjectNameInput.focus(), 50);
+  if(subjectModal) {
+    subjectModal.hidden = false;
+    setTimeout(() => subjectNameInput.focus(), 50);
+  }
 }
-function closeSubjectModal() { subjectModal.hidden = true; }
 
-$('#addSubjectBtn').addEventListener('click', () => openSubjectModal(null));
-$('#editSubjectBtn').addEventListener('click', () => {
-  const subj = state.subjects.find(s => s.id === activeSubjectId);
-  if (subj) openSubjectModal(subj);
-});
-$('#deleteSubjectBtn').addEventListener('click', () => {
-  const subj = state.subjects.find(s => s.id === activeSubjectId);
-  if (!subj) return;
-  if (confirm(`'${subj.name}' 과목과 안의 할 일을 모두 삭제할까요?`)) deleteSubject(subj.id);
-});
-$('#subjectCancelBtn').addEventListener('click', closeSubjectModal);
-subjectModal.addEventListener('click', (e) => { if (e.target === subjectModal) closeSubjectModal(); });
-$('#subjectSaveBtn').addEventListener('click', async () => {
-  const name = subjectNameInput.value.trim();
-  if (!name) { showToast('과목 이름을 입력해주세요.'); return; }
-  await addOrUpdateSubject({ name, color: selectedColor, examDate: subjectExamInput.value });
-  closeSubjectModal();
-  showToast(editingSubjectId ? '과목을 수정했어요.' : '과목을 추가했어요.');
-});
+function closeSubjectModal() { 
+  if(subjectModal) subjectModal.hidden = true; 
+}
+
+const addSubBtn = $('#addSubjectBtn');
+if(addSubBtn) addSubBtn.addEventListener('click', () => openSubjectModal(null));
+
+const editSubBtn = $('#editSubjectBtn');
+if(editSubBtn) {
+  editSubBtn.addEventListener('click', () => {
+    const subj = state.subjects.find(s => s.id === activeSubjectId);
+    if (subj) openSubjectModal(subj);
+  });
+}
+
+const delSubBtn = $('#deleteSubjectBtn');
+if(delSubBtn) {
+  delSubBtn.addEventListener('click', () => {
+    const subj = state.subjects.find(s => s.id === activeSubjectId);
+    if (!subj) return;
+    if (confirm(`'${subj.name}' 과목과 안의 할 일을 모두 삭제할까요?`)) deleteSubject(subj.id);
+  });
+}
+
+const subCancelBtn = $('#subjectCancelBtn');
+if(subCancelBtn) subCancelBtn.addEventListener('click', closeSubjectModal);
+
+if(subjectModal) {
+  subjectModal.addEventListener('click', (e) => { 
+    if (e.target === subjectModal) closeSubjectModal(); 
+  });
+}
+
+const subSaveBtn = $('#subjectSaveBtn');
+if(subSaveBtn) {
+  subSaveBtn.addEventListener('click', async () => {
+    const name = subjectNameInput.value.trim();
+    if (!name) { showToast('과목 이름을 입력해주세요.'); return; }
+    await addOrUpdateSubject({ name, color: selectedColor, examDate: subjectExamInput.value });
+    closeSubjectModal();
+    showToast(editingSubjectId ? '과목을 수정했어요.' : '과목을 추가했어요.');
+  });
+}
 
 /* ---------------- task form / filters ---------------- */
-$('#taskForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!activeSubjectId) return;
-  const title = $('#taskTitle').value.trim();
-  if (!title) return;
-  const type = $('#taskType').value;
-  const dueDate = $('#taskDue').value;
-  await addTask({ title, type, dueDate });
-  $('#taskTitle').value = '';
-  $('#taskDue').value = '';
-  $('#taskTitle').focus();
-});
+const taskForm = $('#taskForm');
+if(taskForm) {
+  taskForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!activeSubjectId) return;
+    const title = $('#taskTitle').value.trim();
+    if (!title) return;
+    const type = $('#taskType').value;
+    const dueDate = $('#taskDue').value;
+    await addTask({ title, type, dueDate });
+    $('#taskTitle').value = '';
+    $('#taskDue').value = '';
+    $('#taskTitle').focus();
+  });
+}
 
 $$('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -518,67 +536,24 @@ $$('.filter-btn').forEach(btn => {
   });
 });
 
-/* ---------------- data modal (export/import/reset) ---------------- */
-const dataModal = $('#dataModalBackdrop');
-$('#menuBtn').addEventListener('click', () => { dataModal.hidden = false; });
-$('#dataCloseBtn').addEventListener('click', () => { dataModal.hidden = true; });
-dataModal.addEventListener('click', (e) => { if (e.target === dataModal) dataModal.hidden = true; });
-
-$('#exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify({ subjects: state.subjects, tasks: state.tasks }, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `exam-planner-backup-${todayStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('백업 파일을 내려받았어요.');
-});
-
-$('#importInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if (!Array.isArray(data.subjects) || !Array.isArray(data.tasks)) throw new Error('invalid');
-    if (!confirm('현재 데이터를 불러온 파일로 덮어쓸까요?')) return;
-    state.subjects = data.subjects;
-    state.tasks = data.tasks;
-    activeSubjectId = state.subjects[0]?.id || null;
-    await saveState();
-    renderAll();
-    dataModal.hidden = true;
-    showToast('데이터를 불러왔어요.');
-  } catch (err) {
-    showToast('올바른 백업 파일이 아니에요.');
-  } finally {
-    e.target.value = '';
-  }
-});
-
-$('#resetBtn').addEventListener('click', async () => {
-  if (!confirm('모든 과목과 할 일을 삭제할까요? 이 작업은 되돌릴 수 없어요.')) return;
-  state = { subjects: [], tasks: [] };
-  activeSubjectId = null;
-  await saveState();
-  renderAll();
-  dataModal.hidden = true;
-  showToast('모든 데이터를 초기화했어요.');
-});
-
 /* ---------------- theme ---------------- */
 const THEME_KEY = 'exam-planner-theme';
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  $('#iconSun').style.display = theme === 'dark' ? 'block' : 'none';
-  $('#iconMoon').style.display = theme === 'dark' ? 'none' : 'block';
+  const iconSun = $('#iconSun');
+  const iconMoon = $('#iconMoon');
+  if(iconSun) iconSun.style.display = theme === 'dark' ? 'block' : 'none';
+  if(iconMoon) iconMoon.style.display = theme === 'dark' ? 'none' : 'block';
   try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
 }
-$('#themeToggle').addEventListener('click', () => {
-  const cur = document.documentElement.dataset.theme;
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-});
+
+const themeToggle = $('#themeToggle');
+if(themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const cur = document.documentElement.dataset.theme;
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+}
 
 /* ---------------- init ---------------- */
 async function init() {
@@ -586,13 +561,14 @@ async function init() {
   try { savedTheme = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
   applyTheme(savedTheme);
 
-  if (!SYNC_ENABLED) {
-    document.getElementById('syncIndicator').title =
+  const syncIndicator = document.getElementById('syncIndicator');
+  if (!SYNC_ENABLED && syncIndicator) {
+    syncIndicator.title =
       'script.js 상단의 SYNC_URL / SYNC_SECRET을 설정하면 여러 기기 동기화가 켜져요.';
   }
   setSyncStatus(SYNC_ENABLED ? 'syncing' : 'local');
 
-  // 1) 로컬 캐시로 먼저 즉시 렌더링 (오프라인이어도 바로 뜨게)
+  // 1) 로컬 캐시로 먼저 즉시 렌더링
   const cached = await loadLocalCache();
   if (cached) {
     state.subjects = cached.subjects || [];
@@ -601,7 +577,7 @@ async function init() {
     renderAll();
   }
 
-  // 2) 원격(스프레드시트)에서 최신 데이터를 가져와 덮어쓰기
+  // 2) 원격 최신 데이터 덮어쓰기
   if (SYNC_ENABLED) {
     const remote = await fetchRemote();
     if (remote) {
