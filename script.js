@@ -10,6 +10,7 @@ const SYNC_SECRET = '12345678';
 const POLL_INTERVAL_MS = 20000; 
 const SYNC_ENABLED = !!SYNC_URL && SYNC_SECRET !== 'REPLACE_WITH_YOUR_OWN_SECRET';
 
+
 /* ---- 로컬 캐시 ---- */
 async function loadLocalCache() {
   try {
