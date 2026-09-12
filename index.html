@@ -132,7 +132,12 @@
 <!-- ===== Subject modal ===== -->
 <div class="modal-backdrop" id="subjectModalBackdrop" hidden>
   <div class="modal">
-    <h3 id="subjectModalTitle">과목 추가</h3>
+    <!-- 제목과 X 버튼을 나란히 배치 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 id="subjectModalTitle" style="margin: 0;">과목 추가</h3>
+      <button id="subjectXBtn" type="button" style="background: none; border: none; font-size: 22px; cursor: pointer; color: inherit; padding: 0; line-height: 1;" aria-label="닫기">✕</button>
+    </div>
+
     <label class="field">
       <span>과목 이름</span>
       <input type="text" id="subjectNameInput" placeholder="예: 수학" maxlength="20">
@@ -151,7 +156,6 @@
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script src="script.js"></script>
